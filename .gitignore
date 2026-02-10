@@ -1,0 +1,32 @@
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Rust
+/target/
+**/*.rs.bk
+Cargo.lock
+
+# Environment
+.env
+.env.local
+
+# Database
+*.db
+*.db-journal
+
+# Uploads
+/uploads/
+*.pdf
+*.docx
+*.pptx
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
