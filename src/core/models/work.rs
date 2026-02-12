@@ -2,12 +2,12 @@ use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
-use validator::Validate;
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow)]
 pub struct Work {
     pub id: Uuid,
     pub title: String,
+    #[sqlx(rename = "work_type")]
     pub work_type: WorkType,
     pub specialty: String,
     pub author_name: String,
@@ -17,12 +17,15 @@ pub struct Work {
     pub keywords: Option<String>,
     pub file_path: String,
     pub thumbnail_path: Option<String>,
+    #[sqlx(rename = "created_at")]
     pub created_at: DateTime<Utc>,
+    #[sqlx(rename = "updated_at")]
     pub updated_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::Type)]
-#[sqlx(type_name = "work_type", rename_all = "lowercase")]
+#[sqlx(type_name = "work_type")]
+#[sqlx(rename_all = "lowercase")]
 pub enum WorkType {
     Article,
     Competition,
@@ -34,40 +37,29 @@ pub enum WorkType {
     Other,
 }
 
-impl WorkType {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            WorkType::Article => "Статья",
-            WorkType::Competition => "Конкурсная работа",
-            WorkType::Essay => "Эссе",
-            WorkType::Report => "Реферат",
-            WorkType::Project => "Проект",
-            WorkType::Presentation => "Презентация",
-            WorkType::Speech => "Доклад",
-            WorkType::Other => "Другое",
-        }
-    }
-}
-
-#[derive(Debug, Clone, Deserialize, Validate)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct WorkCreateDto {
-    #[validate(length(min = 1, max = 500))]
     pub title: String,
-    
     pub work_type: WorkType,
-    
-    #[validate(length(min = 1, max = 200))]
     pub specialty: String,
-    
-    #[validate(length(min = 1, max = 300))]
     pub author_name: String,
-    
-    #[validate(length(min = 1, max = 300))]
     pub supervisor_name: String,
-    
-    #[validate(range(min = 1900, max = 2100))]
     pub year: i32,
-    
     pub annotation: Option<String>,
     pub keywords: Option<String>,
+    pub file_path: String,
+    pub thumbnail_path: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct WorkUpdateDto {
+    pub title: Option<String>,
+    pub work_type: Option<WorkType>,
+    pub specialty: Option<String>,
+    pub author_name: Option<String>,
+    pub supervisor_name: Option<String>,
+    pub year: Option<i32>,
+    pub annotation: Option<String>,
+    pub keywords: Option<String>,
+    pub thumbnail_path: Option<String>,
 }

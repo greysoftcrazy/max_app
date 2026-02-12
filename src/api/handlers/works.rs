@@ -3,11 +3,12 @@ use axum::{
     http::StatusCode,
     Json,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use uuid::Uuid;
 
 use crate::{
+    core::services::WorkService,
     error::AppError,
     state::AppState,
 };
@@ -22,38 +23,65 @@ pub struct SearchQuery {
     pub limit: Option<u32>,
 }
 
+#[derive(Debug, Serialize)]
+pub struct SearchResponse {
+    pub works: Vec<serde_json::Value>,
+    pub total: usize,
+    pub page: u32,
+    pub limit: u32,
+}
+
 pub async fn health_check() -> &'static str {
     "OK"
 }
 
 pub async fn get_work_by_id(
-    Path(_id): Path<Uuid>,
-    State(_state): State<Arc<AppState>>,
+    Path(id): Path<Uuid>,
+    State(state): State<Arc<AppState>>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    // Заглушка — возвращает 404 (работа не найдена)
-    Err(AppError::NotFound)
+    let service = WorkService::new(state.pool.clone());
+    let work = service.get_by_id(id).await?;
+    
+    match work {
+        Some(w) => Ok(Json(serde_json::json!(w))),
+        None => Err(AppError::NotFound),
+    }
 }
 
 pub async fn search_works(
-    Query(_params): Query<SearchQuery>,
-    State(_state): State<Arc<AppState>>,
-) -> Result<Json<Vec<serde_json::Value>>, AppError> {
-    // Заглушка — возвращает пустой массив
-    Ok(Json(vec![]))
+    Query(params): Query<SearchQuery>,
+    State(state): State<Arc<AppState>>,
+) -> Result<Json<SearchResponse>, AppError> {
+    let service = WorkService::new(state.pool.clone());
+    
+    let works = service.search(
+        params.query.as_deref(),
+        params.specialty.as_deref(),
+        params.work_type.as_deref(),
+        params.year,
+        params.page.unwrap_or(1),
+        params.limit.unwrap_or(20),
+    ).await?;
+    
+    let total = works.len();  // ← Получаем длину ДО перемещения
+
+    let response = SearchResponse {
+        works: works.into_iter()
+            .map(|w| serde_json::json!(w))
+            .collect(),
+        total,
+        page: params.page.unwrap_or(1),
+        limit: params.limit.unwrap_or(20),
+    };
+    
+    Ok(Json(response))
 }
 
 pub async fn list_specialties(
-    State(_state): State<Arc<AppState>>,
+    State(state): State<Arc<AppState>>,
 ) -> Result<Json<Vec<String>>, AppError> {
-    // Заглушка — возвращает список специальностей
-    // Позже будет получать из БД
-    let specialties = vec![
-        "Информационные системы и программирование".to_string(),
-        "Сетевое и системное администрирование".to_string(),
-        "Экономика и бухгалтерский учёт".to_string(),
-        "Право и организация социального обеспечения".to_string(),
-        "Дошкольное образование".to_string(),
-    ];
+    let service = WorkService::new(state.pool.clone());
+    let specialties = service.list_specialties().await?;
     
     Ok(Json(specialties))
 }

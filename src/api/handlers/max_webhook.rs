@@ -97,12 +97,12 @@ pub async fn handle_webhook(
     } else if text.starts_with("/search") || text.starts_with("/поиск") {
         handle_search(text)
     } else if text.starts_with("/work") || text.starts_with("/работа") {
-        handle_work(text)
+        handle_work_async(text, state.clone()).await  // ← Асинхронный вызов
     } else {
         "❌ Неизвестная команда. Введите /help для справки.".to_string()
     };
 
-    // Отправка сообщения через клиент МАКС (используем chat_id и user_id из recipient!)
+    // Отправка сообщения через клиент МАКС
     let client = MaxApiClient::new(state.max_bot_token.clone());
 
     match client.send_message(
@@ -158,15 +158,67 @@ fn handle_search(text: &str) -> String {
     format!("🔍 Поиск по запросу: \"{}\"\nФункция пока в разработке.", query)
 }
 
-fn handle_work(text: &str) -> String {
-    let id = text
+async fn handle_work_async(text: &str, state: Arc<AppState>) -> String {
+    let id_str = text
         .trim_start_matches("/work")
         .trim_start_matches("/работа")
         .trim();
     
-    if id.is_empty() {
+    if id_str.is_empty() {
         return "📄 Укажите ID работы.\nПример: /work 123e4567-e89b-12d3-a456-426614174000".to_string();
     }
     
-    format!("📄 Просмотр работы ID: {}\nФункция пока в разработке.", id)
+    // Попытка распарсить UUID
+    let id = match uuid::Uuid::parse_str(id_str) {
+        Ok(id) => id,
+        Err(_) => return "❌ Неверный формат ID. Ожидается UUID.\nПример: /work 123e4567-e89b-12d3-a456-426614174000".to_string(),
+    };
+    
+    let service = crate::core::services::WorkService::new(state.pool.clone());
+    match service.get_by_id(id).await {
+        Ok(Some(work)) => {
+            format!(
+                "📄 <b>{}</b>\n\n\
+                📌 <b>Тип:</b> {}\n\
+                🎓 <b>Специальность:</b> {}\n\
+                👨‍🎓 <b>Автор:</b> {}\n\
+                👨‍🏫 <b>Руководитель:</b> {}\n\
+                📅 <b>Год:</b> {}\n\n\
+                {}{}\
+                🔗 <b>Скачать:</b> {}",
+                work.title,
+                format_work_type(&work.work_type),
+                work.specialty,
+                work.author_name,
+                work.supervisor_name,
+                work.year,
+                if let Some(ref ann) = work.annotation {
+                    format!("📝 <b>Аннотация:</b>\n{}\n\n", ann)
+                } else {
+                    String::new()
+                },
+                if let Some(ref kw) = work.keywords {
+                    format!("🔑 <b>Ключевые слова:</b> {}\n\n", kw)
+                } else {
+                    String::new()
+                },
+                work.file_path
+            )
+        }
+        Ok(None) => format!("❌ Работа с ID {} не найдена.", id),
+        Err(e) => format!("❌ Ошибка при получении работы: {}", e),
+    }
+}
+
+fn format_work_type(work_type: &crate::core::models::WorkType) -> &str {
+    match work_type {
+        crate::core::models::WorkType::Article => "Статья",
+        crate::core::models::WorkType::Competition => "Конкурсная работа",
+        crate::core::models::WorkType::Essay => "Эссе",
+        crate::core::models::WorkType::Report => "Доклад",
+        crate::core::models::WorkType::Project => "Проект",
+        crate::core::models::WorkType::Presentation => "Презентация",
+        crate::core::models::WorkType::Speech => "Выступление",
+        crate::core::models::WorkType::Other => "Другое",
+    }
 }
