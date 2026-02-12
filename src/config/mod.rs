@@ -1,7 +1,7 @@
-use figment::{Figment, providers::{Env, Format, Toml}};
+use figment::{Figment, providers::{Env, Format, Yaml}};
 use serde::Deserialize;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     pub port: u16,
     pub database_url: String,
@@ -10,7 +10,7 @@ pub struct Config {
 }
 
 pub fn load() -> Result<Config, figment::Error> {
-    Figment::from(Toml::file("Config.toml"))
+    Figment::from(Yaml::file("Config.yaml"))
         .merge(Env::prefixed("MAX_APP_"))
         .extract()
 }

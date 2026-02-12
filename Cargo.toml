@@ -10,10 +10,11 @@ repository = "https://github.com/greysoftcrazy/max_app"
 [dependencies]
 # Веб-фреймворк
 axum = "0.7"
-tokio = { version = "1.0", features = ["full"] }
+tokio = { version = "1.0", features = ["full", "net"] }
 tower = "0.4"
 tower-http = { version = "0.5", features = ["cors", "trace", "compression-full"] }
-
+thiserror = "1.0"
+dotenv = "0.15"
 # База данных
 sqlx = { version = "0.7", features = ["postgres", "runtime-tokio-rustls", "uuid", "chrono", "migrate"] }
 serde = { version = "1.0", features = ["derive"] }

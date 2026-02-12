@@ -30,16 +30,16 @@ impl IntoResponse for AppError {
         let (status, error_message) = match self {
             AppError::Internal(msg) => {
                 error!("Внутренняя ошибка: {}", msg);
-                (StatusCode::INTERNAL_SERVER_ERROR, "Внутренняя ошибка сервера")
+                (StatusCode::INTERNAL_SERVER_ERROR, "Внутренняя ошибка сервера".to_string())
             }
-            AppError::BadRequest(msg) => (StatusCode::BAD_REQUEST, msg.as_str()),
-            AppError::Unauthorized => (StatusCode::UNAUTHORIZED, "Требуется авторизация"),
-            AppError::Forbidden => (StatusCode::FORBIDDEN, "Доступ запрещён"),
-            AppError::NotFound => (StatusCode::NOT_FOUND, "Ресурс не найден"),
-            AppError::ValidationError(msg) => (StatusCode::BAD_REQUEST, &msg),
+            AppError::BadRequest(msg) => (StatusCode::BAD_REQUEST, msg),
+            AppError::Unauthorized => (StatusCode::UNAUTHORIZED, "Требуется авторизация".to_string()),
+            AppError::Forbidden => (StatusCode::FORBIDDEN, "Доступ запрещён".to_string()),
+            AppError::NotFound => (StatusCode::NOT_FOUND, "Ресурс не найден".to_string()),
+            AppError::ValidationError(msg) => (StatusCode::BAD_REQUEST, msg),
             AppError::DatabaseError(e) => {
                 error!("Ошибка базы данных: {:?}", e);
-                (StatusCode::INTERNAL_SERVER_ERROR, "Ошибка базы данных")
+                (StatusCode::INTERNAL_SERVER_ERROR, "Ошибка базы данных".to_string())
             }
         };
 

@@ -1,0 +1,4 @@
+port: 3000
+database_url: "postgres://ytk_user:secure_password@localhost:5432/ytk_archive"
+max_bot_token: "f9LHodD0cOJgNPGqzxbyIU_XajGyFjnMtJpCDArY3HwPyc_FQEwHxwRCg7ZZ-boGAafSZipAcLygPoxzwl_D"
+file_storage_path: "./uploads"
